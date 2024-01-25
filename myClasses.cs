@@ -1,8 +1,25 @@
 using escobacli;
 namespace myClasses;
 
+/*
+    This serves as a template for any or most card games that I might want to make in the future, so I'm publishing as a separate branch from
+    the card game this was originally from (Escoba CLI). I'm also going to try to make it as generic as possible so that it can be used for any card game.
+    
+    If you need to change the number of cards that the players can hold, change the value of PLAYER_MAX_CARDS in the Player class.
+    If you need to change the number of cards that the table can hold, change the value of TABLE_MAX_CARDS in the Table class.
+    If you need to change the number of cards in the deck, add the cards in the variable string list.
+    
+    My plan is to make a method that lets you change the number of cards in the deck and the type of deck so i can host multiple games from the same menu, like
+    making it check for a number and in case 0 is entered, it will use the default deck, but if 1 is entered, it will use a deck with 2 jokers, and if 2 is entered,
+    it will use a different regional deck, etc. Another idea was to make it so that the cards on the table can overlap, as in the cards that get putDown() on the table
+    get pushed one on top of the other, but that would require a different approach to the table class, so I'll leave it for later. Maybe with an ordered list.
+
+    Another unprioritized idea is to change the language of the game. It is weird to have spanish cards with english text. 
+*/
+
 public class Game
 {
+    // i want to make it so that you can pick how many players to play with, escoba can be played with multiple players
     private readonly Player p1;
     private readonly Player p2;
 
@@ -14,8 +31,8 @@ public class Game
         this.p2 = p2;
     }
 
-    // NOTE for myself: this is the entry point of the game
-    // it sets it up with a deck, shuffles it and then starts the game. Afterall, what more do you need to start a card game?
+    // this is the entry point of the game
+    // it sets it up with a deck, shuffles it and then starts the game.
     public void Start()
     {
         int roundNumber = 1;
@@ -33,6 +50,8 @@ public class Game
         Play(table);
     }
 
+
+    // This is the main play method. It will be called every round of the game (in games that have rounds, like escoba. This is pretty pointless for games like crazy eight)
     public void Play(Table table)
     {
         Deck deck = new();
@@ -41,6 +60,30 @@ public class Game
         deck.printDeck();
 
         Program.PrintSeparator();
+
+        Deal(deck);
+
+        Program.PrintSeparator();
+
+        deck.printDeck();
+
+        // Uncomment this to put cards on the table
+        //
+        // for every card that the table can fit
+        // for(int i = 0; i < table.getTableMaxCards(); i++)
+        // {
+        //     Card card = deck.DealCard();
+        //     table.putDownCard(card);
+        //     Program.Print($"Placed {card.getValue()} de {card.getSuit()} on the table");
+        // }
+        //Program.PrintSeparator();
+
+
+    }
+
+    public void Deal(Deck deck)
+    {
+        // The players are declared right inside the Game class so their cards and names are always available.
 
         // for every card that the players can hold
         for (int i = 0; i < p1.getMaxCards(); i++)
@@ -53,32 +96,15 @@ public class Game
             p2.DrawCard(card);
 
 
-            // comment next line for release
+            // This line is for debugging purposes only
             Program.Print($"P2 got card: {card.getName()}");
             Console.WriteLine();
         }
 
-        Program.PrintSeparator();
-
-        // for every card that the table can fit
-        for(int i = 0; i < table.getTableMaxCards(); i++)
-        {
-            Card card = deck.DealCard();
-
-            table.putDownCard(card);
-            Program.Print($"Placed {card.getValue()} de {card.getSuit()} on the table");
-        }
-
-        Program.PrintSeparator();
-
-
+        // i was worried that when cards where dealt here, the deck at Play() wouldnt have the cards that were dealt, but it does, so i dont need to worry about it
     }
 
-    public void Deal()
-    {
-
-    }
-
+    // Signature for the future Tutorial() method that'll teach the player how to play the game
     // public void Tutorial() {}
 }
 
@@ -95,9 +121,13 @@ public class Deck
     // constructor
     public Deck()
     {
-        // create a deck of cards
+        // create a deck of spanish cards
         string[] suits = { "Oros", "Copas", "Espadas", "Bastos" };
         string[] values = { "As", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Sota", "Caballo", "Rey" };
+
+        //uncomment for a deck of american cards
+        //string [] suits = {"Hearts", "Diamonds", "Spades", "Clubs"};	
+        //string [] values = {"Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack","Queen", "King"};
 
         foreach (var suit in suits)
         {
@@ -121,6 +151,7 @@ public class Deck
             Console.Write("Drew a card: ");
             Program.Print($"{card.getValue()} de {card.getSuit()}");
         }
+        Program.Print($"The deck has {cards.Count} cards left");
     }
 
     public Card DealCard()
