@@ -9,9 +9,13 @@ namespace escobacli
         {
 
 
-            //TODO: add welcoming message
+            Print("Welcome to Escoba CLI!");
 
-
+            //Add a menu
+            // 1. Start a new game
+            // 2. Learn how to play
+            // 3. Exit
+            
             do
             {
                 // NOTE: still deciding if i should put them outside the loop and keep the same names for all the games or change them each game
@@ -48,6 +52,11 @@ namespace escobacli
             Console.WriteLine(text);
         }
 
+        // self describing
+        public static void PrintSeparator()
+        {
+            Console.WriteLine("--------------------------------------------------");
+        }
 
         // easy ready method for input handling. else i'd have to check for null strings and empty strings everytime
         public static string ReadLineNonNull()
