@@ -1,0 +1,79 @@
+﻿using System;
+using myClasses;
+
+namespace escobacli
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+
+
+            //TODO: add welcoming message
+
+
+            do
+            {
+                // NOTE: still deciding if i should put them outside the loop and keep the same names for all the games or change them each game
+                // ask for player names
+                Print("Enter player 1 name: ");
+                Player p1 = new(inputName());
+
+                Print("Enter player 2 name: ");
+                Player p2 = new(inputName());
+
+                // make new game w given names
+                var game = new Game(p1, p2);
+                game.Start();
+            } while (true); // TODO: add an exit condition
+        }
+
+        // //////////////////////////////////////////////////////////
+        //                                                          /
+        //                      METHODS                             /
+        //                                                          /
+        // //////////////////////////////////////////////////////////
+
+        // self describing
+        public static string inputName()
+        {
+
+            string inputName = ReadLineNonNull();
+            return inputName;
+        }
+
+        // i hate writing Console.WriteLine
+        public static void Print(string text)
+        {
+            Console.WriteLine(text);
+        }
+
+
+        // easy ready method for input handling. else i'd have to check for null strings and empty strings everytime
+        public static string ReadLineNonNull()
+        {
+            string? input;
+            while (true)
+            {
+                input = Console.ReadLine();
+
+                // is not null
+                if (input != null)
+                {
+                    // format
+                    input.Trim().ToUpper();
+
+                    // is not empty nor is too long
+                    if (input != "" && input.Length < 20)
+                    {
+                        return input;
+                    }
+
+                    Program.Print("The name is empty or too long, try again.");
+                }
+            }
+
+            return "you shouldnt be seeing this"; // Agregar una declaración de retorno al final del método.
+        }
+    }
+}
