@@ -80,6 +80,10 @@ namespace escobacli
 
                     Program.Print("The name is empty or too long, try again.");
                 }
+                else
+                {
+                    Program.Print("You should not be reading this message.");
+                }
             }
 
             return "you shouldnt be seeing this"; // Agregar una declaración de retorno al final del método.

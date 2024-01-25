@@ -5,6 +5,7 @@ public class Game
 {
     private readonly Player p1;
     private readonly Player p2;
+    Table table = new Table();
 
 
 
@@ -18,7 +19,7 @@ public class Game
     // it sets it up with a deck, shuffles it and then starts the game. Afterall, what more do you need to start a card game?
     public void Start()
     {
-        int roundNumber = 1;
+        int round = 1;
 
         Program.Print("P1: " + p1.NAME);
         Program.Print("P2: " + p2.NAME);
@@ -26,43 +27,44 @@ public class Game
         Program.Print("Press enter to start...");
         Console.ReadLine();
 
-        Table table = new Table();
 
-        Program.Print($"ROUND {roundNumber} START...");
+        Program.Print($"ROUND {round} START...");
         // Play a round of the game
-        Play(table);
+        // while(noWinner)
+        while (true)
+        {
+            Play();
+        }
     }
 
-    public void Play(Table table)
+    public void Play()
     {
         Deck deck = new();
+
         deck.Shuffle();
-
         deck.printDeck();
-
         Program.PrintSeparator();
 
         Deal(deck);
-
         Program.PrintSeparator();
 
-        // for every card that the table can fit
-        for(int i = 0; i < table.getTableMaxCards(); i++)
+        Deal(deck);
+        Program.PrintSeparator();
+
+        // loop to keep playing turns
+        //while (!noCardsLeft)
+        while (true)
         {
-            Card card = deck.DealCard();
-
-            table.putDownCard(card);
-            Program.Print($"Placed {card.getValue()} de {card.getSuit()} on the table");
+            Console.WriteLine("Your turn");
+            PlayTurn();
+            Console.WriteLine("P2's turn");
+            PlayTurn();
         }
-
-        Program.PrintSeparator();
-
-
     }
 
     public void Deal(Deck deck)
     {
-                // for every card that the players can hold
+        // for every card that the players can hold
         for (int i = 0; i < p1.getMaxCards(); i++)
         {
             Card card = deck.DealCard();
@@ -78,6 +80,68 @@ public class Game
             Console.WriteLine();
         }
     }
+    public void DealTable(Deck deck)
+    {
+        // for every card that the table can fit
+        for (int i = 0; i < table.getTableMaxCards(); i++)
+        {
+            Card card = deck.DealCard();
+
+            table.putDownCard(card);
+            Program.Print($"Placed {card.getValue()} de {card.getSuit()} on the table");
+        }
+    }
+
+
+    public void PlayTurn()
+    {
+        bool cardPlayed = false;
+        // loop until the player plays a card
+        while (!cardPlayed)
+        {
+
+            Program.Print("Choose cards to sum to 15");
+            Console.WriteLine();
+
+            List<int> selection = new();
+
+            // loop until the player selects enough cards
+            int sum = 0;
+            do
+            {
+                if (sum > 15)
+                {
+                    Program.Print("You went over 15, select again.");
+                    sum = 0;
+                }
+
+                Program.Print("Choose a card: ");
+                p1.printHand();
+
+                // get the card id
+                int cardid;
+
+                // try to get the card id while it's less than 1 or more than the number of cards in the hand
+                do
+                {
+                    cardid = int.Parse(Program.ReadLineNonNull());
+                } while (cardid < 1 || cardid > p1.getHand().Count);
+
+                // remove the card from the hand and get it (-1 for zero base index)
+                Card cardSelected = p1.PlayCard(cardid - 1);
+
+                // add the card to the list of selected cards
+                selection.Add(int.Parse(cardSelected.getValue()));
+
+                // add the value of the card to the total
+                sum = sum + int.Parse(p1.getHand().ElementAt(cardid - 1).getValue());
+
+
+            } while (sum != 15);
+
+        }
+    }
+
 
     // public void Tutorial() {}
 }
@@ -98,7 +162,7 @@ public class Deck
     {
         // create a deck of cards
         string[] suits = { "Oros", "Copas", "Espadas", "Bastos" };
-        string[] values = { "As", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Sota", "Caballo", "Rey" };
+        string[] values = { "1", "2", "3", "4", "5", "6", "7", "10", "11", "12" };
 
         foreach (var suit in suits)
         {
@@ -245,6 +309,25 @@ public class Player
     public void DrawCard(Card card)
     {
         this.Hand.Add(card);
+    }
+
+    public Card PlayCard(int card)
+    {
+        Card thisCard = this.Hand.ElementAt(card - 1);
+        this.Hand.RemoveAt(card - 1);
+
+        return thisCard;
+    }
+
+    public void printHand()
+    {
+        Program.Print($"These are your cards:");
+        int i = 1;
+        foreach (var card in this.Hand)
+        {
+            Program.Print($"{i}. {card.getName()}");
+            i++;
+        }
     }
 }
 
