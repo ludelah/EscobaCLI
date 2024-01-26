@@ -82,11 +82,32 @@ namespace escobacli
                 }
                 else
                 {
-                    Program.Print("You should not be reading this message.");
+                    Program.Print("o.o");
                 }
             }
+        }
 
-            return "you shouldnt be seeing this"; // Agregar una declaración de retorno al final del método.
+        // Uses ReadLineNonNull() to get a string, parses it as an int and returns it if its a single digit number
+        public static int ReadDigit()
+        {
+            int input;
+            while (true)
+            {
+                try
+                {
+                    input = int.Parse(Program.ReadLineNonNull());
+
+                    if (input < 10 && input > -1)
+                        return input;
+                    else
+                        throw new System.Exception();
+                    
+                }
+                catch (System.Exception)
+                {
+                    Program.Print("Not a digit, try again.");
+                }
+            }
         }
     }
 }

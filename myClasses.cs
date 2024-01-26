@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using escobacli;
 namespace myClasses;
 
@@ -6,9 +8,10 @@ public class Game
     private readonly Player p1;
     private readonly Player p2;
     Table table = new Table();
+    // a list for card selection
+    List<Card> selectedCards = new List<Card>();
 
-
-
+    // //////////////////////////////////////////////////////////
     public Game(Player p1, Player p2)
     {
         this.p1 = p1;
@@ -48,7 +51,7 @@ public class Game
         Deal(deck);
         Program.PrintSeparator();
 
-        Deal(deck);
+        DealTable(deck, table);
         Program.PrintSeparator();
 
         // loop to keep playing turns
@@ -80,7 +83,7 @@ public class Game
             Console.WriteLine();
         }
     }
-    public void DealTable(Deck deck)
+    public void DealTable(Deck deck, Table table)
     {
         // for every card that the table can fit
         for (int i = 0; i < table.getTableMaxCards(); i++)
@@ -95,51 +98,160 @@ public class Game
 
     public void PlayTurn()
     {
-        bool cardPlayed = false;
-        // loop until the player plays a card
-        while (!cardPlayed)
+        Console.WriteLine(p1.getName() + "'s turn:");
+        Program.PrintSeparator();
+        p1.printHand();
+        Program.PrintSeparator();
+
+        do
         {
+            ShowGameMenu();
+            int option = getOption();
 
-            Program.Print("Choose cards to sum to 15");
-            Console.WriteLine();
-
-            List<int> selection = new();
-
-            // loop until the player selects enough cards
-            int sum = 0;
-            do
+            switch (option)
             {
-                if (sum > 15)
-                {
-                    Program.Print("You went over 15, select again.");
-                    sum = 0;
-                }
+                case 1:
+                    // select cards
+                    SelectCards();
+                    break;
+                case 2:
+                    // show cards on hand
+                    p1.printHand();
+                    break;
+                case 3:
+                    // show cards on table
+                    table.printTable();
+                    break;
+                default:
+                    break;
+            }
 
-                Program.Print("Choose a card: ");
-                p1.printHand();
+        } while (true);
 
-                // get the card id
-                int cardid;
+    }
 
-                // try to get the card id while it's less than 1 or more than the number of cards in the hand
-                do
-                {
-                    cardid = int.Parse(Program.ReadLineNonNull());
-                } while (cardid < 1 || cardid > p1.getHand().Count);
+    private void SelectCards()
+    {
+        p1.printHand();
+        table.printTable();
+        Console.Write($"Select cards: ");
+        int sum = 0;
 
-                // remove the card from the hand and get it (-1 for zero base index)
-                Card cardSelected = p1.PlayCard(cardid - 1);
+        List<Card> previousCards = new(p1.getHand());
+        do
+        {
+            
+            Program.PrintSeparator();
 
-                // add the card to the list of selected cards
-                selection.Add(int.Parse(cardSelected.getValue()));
+            int cardid = -1;
 
-                // add the value of the card to the total
-                sum = sum + int.Parse(p1.getHand().ElementAt(cardid - 1).getValue());
+            Console.WriteLine("1. From hand");
+            Console.WriteLine("2. From table");
+            Console.WriteLine("3. Back");
+            int option = getOption();
 
+            Console.WriteLine("Total: " + sum);
 
-            } while (sum != 15);
+            switch (option)
+            {
+                case 1:
+                    do
+                    {
+                        Program.PrintSeparator();
+                        p1.printHand();
+                        Console.WriteLine("Total: " + sum);
+                        Console.Write($"Select card 1 to {p1.getHand().Count} (0 to go back): ");
 
+                        cardid = Program.ReadDigit();
+                        //goback?
+                        if (cardid == 0)
+                        {
+                            break;
+                        }
+
+                        // else play card and add it to selected cards
+                        else
+                        {
+                            Card card = p1.PlayCard(cardid);
+                            selectedCards.Add(card);
+                            sum += Convert.ToInt32(card.getValue());
+
+                            Console.WriteLine($"Selected card: {card.getName()}");
+                            Console.WriteLine($"Total: {sum}");
+                        }
+
+                        // check if we went past the limit, and if we did, clear everything and start again
+                        if(isPast15(ref sum, ref previousCards))
+                            break;
+
+                    } while (true);
+
+                    break;
+                case 2:
+                    Program.PrintSeparator();
+                    table.printTable();
+                    Console.WriteLine("Total: " + sum);
+
+                    Console.Write($"Select card 1 to {table.getCards().Count} (0 to go back): ");
+                    cardid = Program.ReadDigit();
+
+                    if (cardid == 0)
+                    {
+                        break;
+                    }
+                    break;
+                case 3:
+                    p1.setHand(previousCards);
+                    selectedCards.Clear();
+                    return;
+                default:
+                    break;
+            }
+        } while (true);
+    }
+
+    private bool isPast15(ref int sum, ref List<Card> previousCards)
+    {
+        if (sum > 15)
+        {
+            Program.Print("You went past 15, try again");
+            clearAll(ref sum, ref previousCards);
+            return true;
         }
+        return false;
+    }
+
+    private void clearAll(ref int sum, ref List<Card> previousCards)
+    {
+        selectedCards.Clear();
+        p1.setHand(previousCards);
+        sum = 0;
+    }
+
+    public void ShowGameMenu()
+    {
+        Console.WriteLine("Choose an action:");
+        Console.WriteLine("1. Select cards");
+        Console.WriteLine("2. Show cards on hand");
+        Console.WriteLine("3. Show cards on the table");
+    }
+
+    public int getOption()
+    {
+        int option = -1;
+        do
+        {
+            try
+            {
+                option = Convert.ToInt32(Console.ReadLine());
+            }
+            catch (Exception)
+            {
+                Program.Print("Please enter a valid option");
+            }
+        } while (option < 1 || option > 3);
+
+        return option;
     }
 
 
@@ -162,7 +274,7 @@ public class Deck
     {
         // create a deck of cards
         string[] suits = { "Oros", "Copas", "Espadas", "Bastos" };
-        string[] values = { "1", "2", "3", "4", "5", "6", "7", "10", "11", "12" };
+        string[] values = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
 
         foreach (var suit in suits)
         {
@@ -311,6 +423,8 @@ public class Player
         this.Hand.Add(card);
     }
 
+    // Function that takes a number to indicate which card to play, then, extracts it from the hand of the player and returns it
+    // If you want to get the card back to the player, save the card extracted and then use setHand();
     public Card PlayCard(int card)
     {
         Card thisCard = this.Hand.ElementAt(card - 1);
@@ -319,6 +433,7 @@ public class Player
         return thisCard;
     }
 
+    // Self describing
     public void printHand()
     {
         Program.Print($"These are your cards:");
@@ -353,6 +468,12 @@ public class Table
         return this.Cards;
     }
 
+    public void setCards(List<Card> cards)
+    {
+        this.Cards = cards;
+    }
+
+
     public int getTableMaxCards()
     {
         return this.TABLE_MAX_CARDS;
@@ -362,6 +483,15 @@ public class Table
     public void putDownCard(Card card)
     {
         this.Cards.Add(card);
+    }
+
+    public void printTable()
+    {
+        Program.PrintSeparator();
+        foreach (var card in this.Cards)
+        {
+            Program.Print($"{card.getName()}");
+        }
     }
 }
 
