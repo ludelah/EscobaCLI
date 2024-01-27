@@ -66,7 +66,8 @@ public class Game
         Program.Print($"ROUND {roundNumber} START...");
         Program.PrintSeparator();
         // Play a round of the game
-        do{
+        do
+        {
             Play(ref deck);
         } while (p1.getScore() >= 31 || p2.getScore() >= 31);
     }
@@ -93,7 +94,7 @@ public class Game
             PlayTurn(currentTurn);
 
             turncount++;
-        } while(turncount != 3);
+        } while (turncount != 3);
         // TODO add scores from played round and collect table cards after round ends
 
     }
@@ -122,6 +123,21 @@ public class Game
                 break;
             }
         } while (true);
+
+        /*
+        BUGS FOUND SO FAR:
+
+          · After you select all the cards on the table and you didn't make it past 15, the loop should
+            break and it should return back to the SelectHandCard() loop. Instead, it lets you select more
+            cards despite not being cards to select.
+
+          · So then, you can select the same card table multiple times
+
+          · If theres no cards on the table, there has to be a mechanic that lets you put down a card on it:
+                *select hand card
+                *remove from players hand
+                *add to table card list
+        */
 
         Console.WriteLine("END TURN");
         Program.PrintSeparator();
@@ -334,7 +350,7 @@ public class Player
     {
         return this.PLAYER_MAX_CARDS;
     }
-    
+
     public int getScore()
     {
         return this.score;
@@ -393,7 +409,7 @@ public class Player
             if (isValidIndex(cardindex, this.getHand()))
             { return this.Hand.ElementAt(cardindex); }
 
-            Console.WriteLine("Invalid card index. Try again.");
+            else Console.WriteLine("Invalid card index. Try again.");
         }
     }
 
@@ -431,20 +447,23 @@ public class Player
             {
                 Console.WriteLine("You passed 15. Try again.");
                 selectedCards.Clear();
+                Program.PrintSeparator();
                 return selectedCards;
             }
 
             // which cards do you want to select from the table?
             int cardindex = Program.ReadDigit() - 1;
 
-            if (isValidIndex(cardindex, table.getCards()))
+            if (!isValidIndex(cardindex, table.getCards()))
             {
-                cardbuffer = table.getCards().ElementAt(cardindex);
-                selectedCards.Add(cardbuffer);
-
-                total += cardbuffer.getValue();
-                Console.WriteLine($"Total: {total}");
+                Console.WriteLine ("Invalid card index. Try again.");
+                continue;
             }
+            cardbuffer = table.getCards().ElementAt(cardindex);
+            selectedCards.Add(cardbuffer);
+
+            total += cardbuffer.getValue();
+            Console.WriteLine($"Total: {total}");
 
         } while (total != 15);
 
