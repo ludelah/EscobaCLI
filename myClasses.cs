@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography;
 using escobacli;
 namespace myClasses;
 
@@ -38,7 +39,7 @@ public class Game
     private readonly Player p1;
     private readonly Player p2;
     Table table = new Table();
-
+    readonly int WIN_SCORE = 31;
 
 
     public Game(Player p1, Player p2)
@@ -55,22 +56,25 @@ public class Game
 
         Program.Print("P1: " + p1.Name);
         Program.Print("P2: " + p2.Name);
+        Deck deck = new();
 
         Program.Print("Press enter to start...");
         Console.ReadLine();
+        deck.Shuffle();
 
 
         Program.Print($"ROUND {roundNumber} START...");
+        Program.PrintSeparator();
         // Play a round of the game
-        Play();
+        do{
+            Play(ref deck);
+        } while (p1.getScore() >= 31 || p2.getScore() >= 31);
     }
 
 
     // This is the main play method. It will be called every round of the game (in games that have rounds, like escoba. This is pretty pointless for games like crazy eight)
-    public void Play()
+    public void Play(ref Deck deck)
     {
-        Deck deck = new();
-        deck.Shuffle();
 
         //deck.printDeck();
         //Program.PrintSeparator();
@@ -80,35 +84,54 @@ public class Game
         table.DealTable(deck);
         Program.PrintSeparator();
 
+        int turncount = 0;
+        do
+        {
+            Player currentTurn = p1;
+            PlayTurn(currentTurn);
+            currentTurn = p2;
+            PlayTurn(currentTurn);
 
-        PlayTurn();
+            turncount++;
+        } while(turncount != 3);
+        // TODO add scores from played round and collect table cards after round ends
+
     }
 
-    private void PlayTurn()
+    private void PlayTurn(Player currentplayer)
     {
         do
         {
             table.printTable(false);
-            p1.PrintHand();
-            Card card = p1.SelectHandCard();
-            //List<Card> selectedCards = new(p1.SelectTableCard());
-            //selectedCards.Add(card);
+            currentplayer.PrintHand();
 
-            /*if (isValidSum(ref selectedCards()))
+            Card handcard = currentplayer.SelectHandCard();
+            Console.WriteLine($"Selected card: {handcard.getName()} \nTotal: {handcard.getValue()}");
+            Program.PrintSeparator();
+
+            List<Card> selectedCards = new(currentplayer.SelectTableCard(table, handcard.getValue()));
+
+            if (isValidSum(ref selectedCards, ref handcard))
             {
-                foreach (var collectedCard in selectedCards)
+                selectedCards.Add(handcard); currentplayer.RemoveCard(handcard);
+
+                foreach (Card collectedCard in selectedCards)
                 {
-                    p1.collectedCards.Add(collectedCard);
+                    currentplayer.collectedCards.Add(collectedCard);
                 }
+                break;
             }
-            */
-            Console.WriteLine(card.getName());
         } while (true);
+
+        Console.WriteLine("END TURN");
+        Program.PrintSeparator();
+        Console.WriteLine($"Next player's turn. {currentplayer.getName()} don't look at his cards");
+        Console.ReadLine();
     }
 
-    private bool isValidSum(ref List<Card> selection)
+    private bool isValidSum(ref List<Card> selection, ref Card handcard)
     {
-        int total = 0;
+        int total = handcard.getValue();
 
         foreach (Card card in selection)
         {
@@ -283,7 +306,7 @@ public class Player
     private List<Card> Hand;
     public List<Card> collectedCards;
     readonly int PLAYER_MAX_CARDS = 3;
-
+    int score = 0;
 
     // //////////////////////////////////////////////////////////
     //                                                          /
@@ -311,6 +334,11 @@ public class Player
     {
         return this.PLAYER_MAX_CARDS;
     }
+    
+    public int getScore()
+    {
+        return this.score;
+    }
 
     // //////////////////////////////////////////////////////////
     //                                                          /
@@ -321,6 +349,7 @@ public class Player
     {
         this.Name = name;
         this.Hand = new List<Card>(3);
+        this.collectedCards = [];
     }
 
     // //////////////////////////////////////////////////////////
@@ -333,11 +362,11 @@ public class Player
     {
         int i = 1;
         Console.WriteLine("Your hand:");
-            foreach (Card card in this.Hand)
-            {
-                Console.WriteLine($"{i}. {card.getName()}");
-                i++;
-            }
+        foreach (Card card in this.Hand)
+        {
+            Console.WriteLine($"{i}. {card.getName()}");
+            i++;
+        }
     }
 
 
@@ -355,19 +384,85 @@ public class Player
     {
         Console.WriteLine($"Select card (1 to {this.getHand().Count}):");
 
-        Card card;
         while (true)
         {
             // get the index
             int cardindex = Program.ReadDigit() - 1;
 
             // return it if input is valid
-            if (cardindex >= 0 && cardindex < this.getHand().Count)
-            { return card = this.getHand().ElementAt(cardindex); }
+            if (isValidIndex(cardindex, this.getHand()))
+            { return this.Hand.ElementAt(cardindex); }
 
+            Console.WriteLine("Invalid card index. Try again.");
+        }
+    }
+
+
+    private bool isValidIndex(int cardindex, List<Card> cards)
+    {
+        return cardindex >= 0 && cardindex < cards.Count;
+    }
+
+    /// <summary>
+    /// Shows a given table and asks the player to </br>
+    /// input a number. Then, it traces that number </br>
+    /// to its respective card in the table and adds it </br>
+    /// to a list of selected cards so far. It loops </br>
+    /// back until the sum of the cards selected </br>
+    /// plus the card selected from the hand (sum) </br>
+    /// equal or pass 15. If they equal 15, the </br>
+    /// cards are removed from the given table and </br>
+    /// the sellected cards are returned. If it passes 15 </br>
+    /// it clears the selectedcards list and returns it empty.
+    /// </summary>
+    public List<Card> SelectTableCard(Table table, int sum)
+    {
+        Program.PrintSeparator();
+        List<Card> selectedCards = [];
+        Card cardbuffer;
+        int total = sum;
+
+        Console.WriteLine("Select the cards from the table to sum:");
+        table.printTable();
+        do
+        {
+            // clean the selectedcards array and break && return if it passed the quota
+            if (total > 15)
+            {
+                Console.WriteLine("You passed 15. Try again.");
+                selectedCards.Clear();
+                return selectedCards;
+            }
+
+            // which cards do you want to select from the table?
+            int cardindex = Program.ReadDigit() - 1;
+
+            if (isValidIndex(cardindex, table.getCards()))
+            {
+                cardbuffer = table.getCards().ElementAt(cardindex);
+                selectedCards.Add(cardbuffer);
+
+                total += cardbuffer.getValue();
+                Console.WriteLine($"Total: {total}");
+            }
+
+        } while (total != 15);
+
+
+        // if everything went correctly, clean the table from the picked up cards
+        foreach (var card in selectedCards)
+        {
+            table.RemoveCard(card);
         }
 
+        return selectedCards;
     }
+
+    public void RemoveCard(Card handcard)
+    {
+        this.Hand.Remove(handcard);
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -410,14 +505,19 @@ public class Table
     public void printTable(bool withIndex = true)
     {
         Console.WriteLine("The table has:");
-        for(int i = 0; i < this.Cards.Count; i++)
+        for (int i = 0; i < this.Cards.Count; i++)
         {
             if (withIndex)
             {
-                Console.Write($"{i+1}. ");
+                Console.Write($"{i + 1}. ");
             }
             Console.WriteLine($"{Cards[i].getName()}");
         }
+    }
+
+    public void RemoveCard(Card card)
+    {
+        this.Cards.Remove(card);
     }
 }
 
