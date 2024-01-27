@@ -81,8 +81,28 @@ namespace escobacli
                     Program.Print("The name is empty or too long, try again.");
                 }
             }
+        }
 
-            return "you shouldnt be seeing this"; // Agregar una declaración de retorno al final del método.
+         public static int ReadDigit()
+        {
+            int input;
+            while (true)
+            {
+                try
+                {
+                    input = int.Parse(Program.ReadLineNonNull());
+
+                    if (input < 10 && input > -1)
+                        return input;
+                    else
+                        throw new System.Exception();
+                    
+                }
+                catch (System.Exception)
+                {
+                    Program.Print("Not a digit, try again.");
+                }
+            }
         }
     }
 }

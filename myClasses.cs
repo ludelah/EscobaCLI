@@ -1,3 +1,5 @@
+using System.Numerics;
+using System.Reflection;
 using escobacli;
 namespace myClasses;
 
@@ -16,12 +18,26 @@ namespace myClasses;
 
     Another unprioritized idea is to change the language of the game. It is weird to have spanish cards with english text. 
 */
+enum cardValues
+{
+    As = 1,
+    Dos,
+    Tres,
+    Cuatro,
+    Cinco,
+    Seis,
+    Siete,
+    Sota,
+    Caballo,
+    Rey,
+}
 
 public class Game
 {
     // i want to make it so that you can pick how many players to play with, escoba can be played with multiple players
     private readonly Player p1;
     private readonly Player p2;
+    Table table = new Table();
 
 
 
@@ -43,44 +59,76 @@ public class Game
         Program.Print("Press enter to start...");
         Console.ReadLine();
 
-        Table table = new Table();
 
         Program.Print($"ROUND {roundNumber} START...");
         // Play a round of the game
-        Play(table);
+        Play();
     }
 
 
     // This is the main play method. It will be called every round of the game (in games that have rounds, like escoba. This is pretty pointless for games like crazy eight)
-    public void Play(Table table)
+    public void Play()
     {
         Deck deck = new();
         deck.Shuffle();
 
-        deck.printDeck();
-
-        Program.PrintSeparator();
-
-        Deal(deck);
-
-        Program.PrintSeparator();
-
-        deck.printDeck();
-
-        // Uncomment this to put cards on the table
-        //
-        // for every card that the table can fit
-        // for(int i = 0; i < table.getTableMaxCards(); i++)
-        // {
-        //     Card card = deck.DealCard();
-        //     table.putDownCard(card);
-        //     Program.Print($"Placed {card.getValue()} de {card.getSuit()} on the table");
-        // }
+        //deck.printDeck();
         //Program.PrintSeparator();
 
 
+        Deal(deck);
+        table.DealTable(deck);
+        Program.PrintSeparator();
+
+
+        PlayTurn();
     }
 
+    private void PlayTurn()
+    {
+        do
+        {
+            table.printTable(false);
+            p1.PrintHand();
+            Card card = p1.SelectHandCard();
+            //List<Card> selectedCards = new(p1.SelectTableCard());
+            //selectedCards.Add(card);
+
+            /*if (isValidSum(ref selectedCards()))
+            {
+                foreach (var collectedCard in selectedCards)
+                {
+                    p1.collectedCards.Add(collectedCard);
+                }
+            }
+            */
+            Console.WriteLine(card.getName());
+        } while (true);
+    }
+
+    private bool isValidSum(ref List<Card> selection)
+    {
+        int total = 0;
+
+        foreach (Card card in selection)
+        {
+            total += card.getValue();
+        }
+        if (total != 15)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    ///<summary>
+    /// It saves a <i>Card</i> in it's <i>Card</i> buffer from a  <br/>
+    /// given deck using the <b>Deck.DealCard()</b> method. <br/>
+    /// Then, it calls the <b>Player.DrawCard(Card)</b> method,<br/>
+    /// which takes a given <i>Card</i> and adds it to the player's<br/>
+    /// hand until all players hands are full
+    ///</summary>
     public void Deal(Deck deck)
     {
         // The players are declared right inside the Game class so their cards and names are always available.
@@ -97,8 +145,8 @@ public class Game
 
 
             // This line is for debugging purposes only
-            Program.Print($"P2 got card: {card.getName()}");
-            Console.WriteLine();
+            // Program.Print($"P2 got card: {card.getName()}");
+            // Console.WriteLine();
         }
 
         // i was worried that when cards where dealt here, the deck at Play() wouldnt have the cards that were dealt, but it does, so i dont need to worry about it
@@ -123,7 +171,6 @@ public class Deck
     {
         // create a deck of spanish cards
         string[] suits = { "Oros", "Copas", "Espadas", "Bastos" };
-        string[] values = { "As", "Dos", "Tres", "Cuatro", "Cinco", "Seis", "Siete", "Sota", "Caballo", "Rey" };
 
         //uncomment for a deck of american cards
         //string [] suits = {"Hearts", "Diamonds", "Spades", "Clubs"};	
@@ -131,19 +178,25 @@ public class Deck
 
         foreach (var suit in suits)
         {
-            foreach (var value in values)
+            for (int i = 1; i <= (int)cardValues.Rey; i++)
             {
-                cards.Add(new Card(suit, value));
+                cards.Add(new Card(suit, i));
             }
         }
     }
 
+    /// <summary>
+    /// Shuffles it's instantiated List of <i>Card</i>
+    /// </summary>
     public void Shuffle()
     {
         Random random = new();
         cards = cards.OrderBy(x => random.Next()).ToList();
     }
 
+    /// <summary>
+    /// Prints each card from it's list of <i>Card</i> to the console along with how many cards it has. Used for debugging purposes
+    /// </summary>
     public void printDeck()
     {
         foreach (var card in cards)
@@ -153,7 +206,10 @@ public class Deck
         }
         Program.Print($"The deck has {cards.Count} cards left");
     }
-
+    /// <summary>
+    /// Returns a <i>Card</i> to wherever the function is called and removes it from it's instatiated list of cards.
+    /// </summary>
+    /// <returns></returns>
     public Card DealCard()
     {
         Card card = cards[0];
@@ -174,7 +230,7 @@ public class Card
     //                                                          /
     // //////////////////////////////////////////////////////////
     private string Suit;
-    private string Value;
+    private int Value;
 
     private string cardName;
 
@@ -188,7 +244,7 @@ public class Card
         return this.Suit;
     }
 
-    public String getValue()
+    public int getValue()
     {
         return this.Value;
     }
@@ -203,7 +259,7 @@ public class Card
     //                      CONSTRUCTOR                         /
     //                                                          /
     // //////////////////////////////////////////////////////////
-    public Card(string suit, string value)
+    public Card(string suit, int value)
     {
         this.Suit = suit;
         this.Value = value;
@@ -225,6 +281,7 @@ public class Player
     // //////////////////////////////////////////////////////////
     public readonly string Name;
     private List<Card> Hand;
+    public List<Card> collectedCards;
     readonly int PLAYER_MAX_CARDS = 3;
 
 
@@ -271,9 +328,45 @@ public class Player
     //                      METHODS                             /
     //                                                          /
     // //////////////////////////////////////////////////////////
+
+    public void PrintHand()
+    {
+        int i = 1;
+        Console.WriteLine("Your hand:");
+            foreach (Card card in this.Hand)
+            {
+                Console.WriteLine($"{i}. {card.getName()}");
+                i++;
+            }
+    }
+
+
+    /// <summary>
+    /// Function that takes a <i>Card</i> as <br/>
+    /// argument and adds it to its hand.
+    /// </summary>
+    /// <param name="card"></param>
     public void DrawCard(Card card)
     {
         this.Hand.Add(card);
+    }
+
+    public Card SelectHandCard()
+    {
+        Console.WriteLine($"Select card (1 to {this.getHand().Count}):");
+
+        Card card;
+        while (true)
+        {
+            // get the index
+            int cardindex = Program.ReadDigit() - 1;
+
+            // return it if input is valid
+            if (cardindex >= 0 && cardindex < this.getHand().Count)
+            { return card = this.getHand().ElementAt(cardindex); }
+
+        }
+
     }
 }
 
@@ -299,15 +392,32 @@ public class Table
         return this.Cards;
     }
 
-    public int getTableMaxCards()
+    public int GetTableMaxCards()
     {
         return this.TABLE_MAX_CARDS;
     }
 
     //methods
-    public void putDownCard(Card card)
+
+    public void DealTable(Deck deck)
     {
-        this.Cards.Add(card);
+        for (int i = 0; i < this.Cards.Capacity; i++)
+        {
+            this.Cards.Add(deck.DealCard());
+        }
+    }
+
+    public void printTable(bool withIndex = true)
+    {
+        Console.WriteLine("The table has:");
+        for(int i = 0; i < this.Cards.Count; i++)
+        {
+            if (withIndex)
+            {
+                Console.Write($"{i+1}. ");
+            }
+            Console.WriteLine($"{Cards[i].getName()}");
+        }
     }
 }
 
