@@ -101,29 +101,40 @@ public class Game
 
     private void PlayTurn(Player currentplayer)
     {
-        do
+        ShowTurnOptions();
+        int selectedOption = Program.ReadDigit();
+
+        if (selectedOption == 1)
         {
-            table.printTable(false);
-            currentplayer.PrintHand();
-
-            Card handcard = currentplayer.SelectHandCard();
-            Console.WriteLine($"Selected card: {handcard.getName()} \nTotal: {handcard.getValue()}");
-            Program.PrintSeparator();
-
-            List<Card> selectedCards = new(currentplayer.SelectTableCard(table, handcard.getValue()));
-
-            if (isValidSum(ref selectedCards, ref handcard))
+            do
             {
-                selectedCards.Add(handcard); currentplayer.RemoveCard(handcard);
+                table.printTable(false);
+                currentplayer.PrintHand();
 
-                foreach (Card collectedCard in selectedCards)
+                Card handcard = currentplayer.SelectHandCard();
+                Console.WriteLine($"Selected card: {handcard.getName()} \nTotal: {handcard.getValue()}");
+                Program.PrintSeparator();
+
+
+                List<Card> selectedCards = new(currentplayer.SelectTableCard(table, handcard.getValue()));
+
+                if (isValidSum(ref selectedCards, ref handcard))
                 {
-                    currentplayer.collectedCards.Add(collectedCard);
-                }
-                break;
-            }
-        } while (true);
+                    selectedCards.Add(handcard); currentplayer.RemoveCard(handcard);
 
+                    foreach (Card collectedCard in selectedCards)
+                    {
+                        currentplayer.collectedCards.Add(collectedCard);
+                    }
+                }
+
+                break;
+            } while (true);
+        }
+        else if (selectedOption == 2)
+        {
+            currentplayer.PlaceCardOnTable(ref table);
+        }
         /*
         BUGS FOUND SO FAR:
 
@@ -137,12 +148,20 @@ public class Game
                 *select hand card
                 *remove from players hand
                 *add to table card list
+
+          · Implement place card mechanic
         */
 
-        Console.WriteLine("END TURN");
+        Console.WriteLine("END TURN: Press enter to continue...");
         Program.PrintSeparator();
-        Console.WriteLine($"Next player's turn. {currentplayer.getName()} don't look at his cards");
         Console.ReadLine();
+    }
+
+    private void ShowTurnOptions()
+    {
+        Console.WriteLine("What do you want to do?");
+        Console.WriteLine("1. Collect cards");
+        Console.WriteLine("2. Place card and end turn");
     }
 
     private bool isValidSum(ref List<Card> selection, ref Card handcard)
@@ -445,7 +464,7 @@ public class Player
             // clean the selectedcards array and break && return if it passed the quota
             if (total > 15)
             {
-                Console.WriteLine("You passed 15. Try again.");
+                Console.WriteLine("You passed 15. Going back to the previous menu.");
                 selectedCards.Clear();
                 Program.PrintSeparator();
                 return selectedCards;
@@ -456,8 +475,7 @@ public class Player
 
             if (!isValidIndex(cardindex, table.getCards()))
             {
-                Console.WriteLine ("Invalid card index. Try again.");
-                continue;
+                Console.WriteLine("Invalid card index. Try again.");
             }
             cardbuffer = table.getCards().ElementAt(cardindex);
             selectedCards.Add(cardbuffer);
@@ -482,6 +500,12 @@ public class Player
         this.Hand.Remove(handcard);
     }
 
+    internal void PlaceCardOnTable(ref Table table)
+    {
+        this.PrintHand();
+        Card cardToPlace = SelectHandCard();
+        table.AddCard(cardToPlace);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -537,6 +561,11 @@ public class Table
     public void RemoveCard(Card card)
     {
         this.Cards.Remove(card);
+    }
+
+    public void AddCard(Card card)
+    {
+        this.Cards.Add(card);
     }
 }
 
